@@ -6,9 +6,9 @@
 
 </div>
 
-## About
+## How to use
 
-TODO: add later
+Read this [readme](./debot-browser/README.md)
 
 ## Prerequisites
 
