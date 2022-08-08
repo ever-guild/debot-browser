@@ -1,8 +1,8 @@
 <div align="center">
 
-  <h1><code>Cli DeBot Browser</code></h1>
+  <h1><code>Cli Debot Browser</code></h1>
 
-  <strong>A standalone console DeBot Browser written in Rust and compiled as WebAssembly.</strong>
+  <strong>A standalone console Debot Browser written in Rust and compiled as WebAssembly.</strong>
 
 </div>
 
@@ -10,7 +10,9 @@
 
 Read this [readme](./debot-browser/README.md)
 
-## Prerequisites
+## How to build
+
+### Prerequisites
 
 For building WebAssembly:
 
@@ -24,7 +26,7 @@ For running test example:
 
 - npm >= 7.22.0
 
-## 🛠️ Build
+### 🛠️ Compile wasm
 
 ```bash
 cd builder
