@@ -1,5 +1,5 @@
+use super::{ApproveKind, ChainLink, DebotManifest};
 use serde_json::Value;
-use super::{ApproveKind, DebotManifest, ChainLink};
 use std::vec::IntoIter;
 use ton_client::abi::{Abi, CallSet};
 use ton_client::debot::DebotActivity;
@@ -23,7 +23,10 @@ pub struct ChainProcessor {
 
 impl ChainProcessor {
     pub fn new() -> Self {
-        Self { manifest: DebotManifest::default(), chain_iter: vec![].into_iter() }
+        Self {
+            manifest: DebotManifest::default(),
+            chain_iter: vec![].into_iter(),
+        }
     }
 
     pub fn load_manifest(&mut self, mut manifest: DebotManifest) {
@@ -62,10 +65,11 @@ impl ChainProcessor {
             return None;
         }
         match &self.manifest.init_args {
-            Some(args) => CallSet::some_with_function_and_input(&self.manifest.init_method, args.clone()),
+            Some(args) => {
+                CallSet::some_with_function_and_input(&self.manifest.init_method, args.clone())
+            }
             None => CallSet::some_with_function(&self.manifest.init_method),
         }
-        
     }
 
     pub fn next_input(
@@ -74,16 +78,19 @@ impl ChainProcessor {
         in_method: &str,
         in_params: &Value,
     ) -> Result<Option<Value>, ProcessorError> {
-        let chlink = self.chain_iter.next().ok_or(
-            if self.interactive() {
-                ProcessorError::InterfaceCallNeeded
-            } else {
-                ProcessorError::NoMoreChainlinks
-            }
-        )?;
-        
+        let chlink = self.chain_iter.next().ok_or(if self.interactive() {
+            ProcessorError::InterfaceCallNeeded
+        } else {
+            ProcessorError::NoMoreChainlinks
+        })?;
+
         match chlink {
-            ChainLink::Input {interface, method, params, mandatory} => {
+            ChainLink::Input {
+                interface,
+                method,
+                params,
+                mandatory,
+            } => {
                 if interface != in_interface {
                     if !mandatory {
                         self.next_input(in_interface, in_method, in_params)
@@ -95,35 +102,33 @@ impl ChainProcessor {
                 } else {
                     Ok(params.clone())
                 }
-            },
+            }
             _ => Err(ProcessorError::UnexpectedChainLinkKind),
         }
     }
 
     pub fn next_signing_box(&mut self) -> Result<u32, ProcessorError> {
-        let chlink = self.chain_iter.next().ok_or(
-            if self.interactive() {
-                ProcessorError::InterfaceCallNeeded
-            } else {
-                ProcessorError::NoMoreChainlinks
-            }
-        )?;
+        let chlink = self.chain_iter.next().ok_or(if self.interactive() {
+            ProcessorError::InterfaceCallNeeded
+        } else {
+            ProcessorError::NoMoreChainlinks
+        })?;
 
         match chlink {
-            ChainLink::SigningBox {handle} => {
-                Ok(handle)
-            },
+            ChainLink::SigningBox { handle } => Ok(handle),
             _ => Err(ProcessorError::UnexpectedChainLinkKind),
         }
     }
 
     pub fn next_approve(&mut self, activity: &DebotActivity) -> Result<bool, ProcessorError> {
         let app_kind = match activity {
-            DebotActivity::Transaction {..} => ApproveKind::ApproveOnChainCall,
+            DebotActivity::Transaction { .. } => ApproveKind::ApproveOnChainCall,
         };
-        let auto_approve = self.manifest.auto_approve.as_ref().and_then(|vec| {
-            Some(vec.iter().find(|x| **x == app_kind).is_some())
-        });
+        let auto_approve = self
+            .manifest
+            .auto_approve
+            .as_ref()
+            .and_then(|vec| Some(vec.iter().find(|x| **x == app_kind).is_some()));
 
         let chlink = self.chain_iter.next();
         if chlink.is_none() {
@@ -141,14 +146,22 @@ impl ChainProcessor {
         // TODO: ?
         let chlink = chlink.unwrap();
         match chlink {
-            ChainLink::OnchainCall { approve, iflq: _, ifeq: _ } => {
-                match activity {
-                    DebotActivity::Transaction {msg: _, dst: _, out: _, fee: _, setcode: _, signkey: _, signing_box_handle: _} => {
-                        Ok(approve.clone())
-                    }
-                }
+            ChainLink::OnchainCall {
+                approve,
+                iflq: _,
+                ifeq: _,
+            } => match activity {
+                DebotActivity::Transaction {
+                    msg: _,
+                    dst: _,
+                    out: _,
+                    fee: _,
+                    setcode: _,
+                    signkey: _,
+                    signing_box_handle: _,
+                } => Ok(approve.clone()),
             },
-            _ => Err(ProcessorError::UnexpectedChainLinkKind)
+            _ => Err(ProcessorError::UnexpectedChainLinkKind),
         }
     }
 }

@@ -10,7 +10,7 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
-use super::config::{make_shared_settings, UserSettings, SharedUserSettings};
+use super::config::{make_shared_settings, SharedUserSettings, UserSettings};
 use super::helpers::{load_abi, load_ton_address, TonClient};
 use super::{Callbacks, ChainProcessor, DebotManifest, SupportedInterfaces};
 use log::info;
@@ -36,7 +36,7 @@ struct DebotEntry {
 
 /// Top level object. Created only once.
 pub struct TerminalBrowser {
-    /// Instance of SDK client. 
+    /// Instance of SDK client.
     pub client: TonClient,
     /// User Information used by UserInfo interface
     pub user_settings: SharedUserSettings,
@@ -51,7 +51,7 @@ pub struct TerminalBrowser {
     callbacks: Arc<Callbacks>,
     /// Set of intrefaces implemented by current DBrowser.
     interfaces: SupportedInterfaces,
-    /// Input chain Processor for Debot Manifest 
+    /// Input chain Processor for Debot Manifest
     processor: Arc<tokio::sync::RwLock<ChainProcessor>>,
     /// Indicates if Browser will interact with the user or not.
     interactive: bool,
@@ -66,25 +66,17 @@ impl TerminalBrowser {
         addr: String,
     ) -> Result<Self, String> {
         let processor = Arc::new(tokio::sync::RwLock::new(ChainProcessor::new()));
-        
-        let callbacks = Arc::new(
-            Callbacks::new(
-                client.clone(),
-                processor.clone(),
-            )
-        );
+
+        let callbacks = Arc::new(Callbacks::new(client.clone(), processor.clone()));
 
         let user_settings = make_shared_settings(user_settings);
 
-        let interfaces = SupportedInterfaces::new(
-            client.clone(), 
-            user_settings.clone(),
-            processor.clone(),
-        );
+        let interfaces =
+            SupportedInterfaces::new(client.clone(), user_settings.clone(), processor.clone());
 
         // TODO remove clone
         let main_debot_addr = addr.clone();
-        
+
         let mut browser = Self {
             client,
             user_settings,
@@ -115,13 +107,13 @@ impl TerminalBrowser {
             debot_addr.clone(),
             None,
             self.client.clone(),
-            self.callbacks.clone()
+            self.callbacks.clone(),
         );
         let info: DebotInfo = dengine.init().await?.into();
         let abi_version = info.dabi_version.clone();
         let abi_ref = info.dabi.as_ref();
         let abi = load_abi(&abi_ref.ok_or(format!("DeBot ABI is not defined"))?)?;
-        
+
         if call_start {
             let mut run_debot = autorun;
             if !autorun {
@@ -150,7 +142,7 @@ impl TerminalBrowser {
                 dengine,
                 callbacks: callbacks_ref,
                 info,
-            }
+            },
         );
         Ok(abi_version)
     }
@@ -165,11 +157,17 @@ impl TerminalBrowser {
             .bots
             .get_mut(debot_addr)
             .ok_or_else(|| "Internal browser error: debot not found".to_owned())?;
-        if let Some(result) = self.interfaces.try_execute(&msg, interface_id, &debot.info.dabi_version).await {
+        if let Some(result) = self
+            .interfaces
+            .try_execute(&msg, interface_id, &debot.info.dabi_version)
+            .await
+        {
             let (func_id, return_args) = result?;
             let call_set = match func_id {
                 0 => None,
-                _ => CallSet::some_with_function_and_input(&format!("0x{:x}", func_id), return_args),
+                _ => {
+                    CallSet::some_with_function_and_input(&format!("0x{:x}", func_id), return_args)
+                }
             };
             let response_msg = encode_internal_message(
                 self.client.clone(),
@@ -179,7 +177,7 @@ impl TerminalBrowser {
                     call_set,
                     value: "1000000000000000".to_owned(),
                     ..Default::default()
-                }
+                },
             )
             .await
             .map_err(|e| format!("{}", e))?
@@ -233,7 +231,7 @@ impl TerminalBrowser {
 
             if wc == DEBOT_WC {
                 if id == BROWSER_ID {
-                    info!("Message from DeBot to Browser"); 
+                    info!("Message from DeBot to Browser");
                     self.set_exit_arg(msg, msg_src).await?;
                 } else {
                     self.call_interface(msg, &id, msg_src).await?;
@@ -247,22 +245,28 @@ impl TerminalBrowser {
         Ok(())
     }
 
-    pub async fn run_manifest(&mut self, manifest: DebotManifest) -> Result<Option<serde_json::Value>, String> {
+    pub async fn run_manifest(
+        &mut self,
+        manifest: DebotManifest,
+    ) -> Result<Option<serde_json::Value>, String> {
         let (start, call_set, mut init_message) = {
             let mut processor = self.processor.write().await;
             processor.load_manifest(manifest);
-            ( 
+            (
                 processor.default_start(),
                 processor.initial_call_set(),
-                processor.initial_msg()
+                processor.initial_msg(),
             )
         };
-        
+
         self.exit_arg = None;
 
-        let abi = self.bots.get(&self.main_debot_addr)
+        let abi = self
+            .bots
+            .get(&self.main_debot_addr)
             .ok_or_else(|| format!("Starting DeBot not found: {}", &self.main_debot_addr))?
-            .abi.clone();
+            .abi
+            .clone();
 
         if !start && init_message.is_none() {
             init_message = Some(
@@ -297,7 +301,7 @@ impl TerminalBrowser {
         println!("DeBot Info:");
         fn print<'a>(field: &'a Option<String>) -> &'a str {
             field.as_ref().map(|v| v.as_str()).unwrap_or("None")
-        } 
+        }
         println!("Name   : {}", print(&info.name));
         println!("Version: {}", print(&info.version));
         println!("Author : {}", print(&info.author));
@@ -312,11 +316,19 @@ impl TerminalBrowser {
         let arg = if let Some(abi) = abi {
             let decoded = decode_message(
                 self.client.clone(),
-                ParamsOfDecodeMessage { abi, message },
-            ).await.map_err(|e| format!("{}", e))?;
+                ParamsOfDecodeMessage {
+                    abi,
+                    message,
+                    allow_partial: false,
+                    function_name: None,
+                    data_layout: None,
+                },
+            )
+            .await
+            .map_err(|e| format!("{}", e))?;
             decoded.value.unwrap_or(json!({}))
         } else {
-            json!({"message": message})
+            json!({ "message": message })
         };
         self.exit_arg = Some(arg);
         Ok(())
@@ -388,8 +400,6 @@ pub fn action_input(max: usize) -> Result<(usize, usize, Vec<String>), String> {
 
     Ok((n, argc, argv))
 }
-
-
 
 #[cfg(test)]
 mod tests {}

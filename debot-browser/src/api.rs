@@ -22,10 +22,12 @@ use lazy_static::lazy_static;
 use log::{info, LevelFilter, SetLoggerError};
 use serde::Serialize;
 use serde_wasm_bindgen::{from_value, to_value, Serializer};
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
-use ton_client::crypto::{KeyPair, ParamsOfSign, RegisteredSigningBox, ParamsOfGenerateRandomBytes};
+use ton_client::crypto::{
+    KeyPair, ParamsOfGenerateRandomBytes, ParamsOfSign, RegisteredSigningBox,
+};
 use ton_client::{ClientConfig, ClientContext};
 use wasm_bindgen::prelude::*;
 
@@ -34,17 +36,21 @@ lazy_static! {
 }
 
 struct BrowserTable {
-    table: RwLock<HashMap<u64, Arc<Mutex<TerminalBrowser>> > >,
+    table: RwLock<HashMap<u64, Arc<Mutex<TerminalBrowser>>>>,
 }
 
 impl BrowserTable {
     fn new() -> Self {
-        Self { table: RwLock::new(HashMap::new()) }
+        Self {
+            table: RwLock::new(HashMap::new()),
+        }
     }
 
     async fn insert(&self, browser: TerminalBrowser) -> BrowserHandle {
         let handle = Self::generate_handle();
-        self.table.write().await
+        self.table
+            .write()
+            .await
             .insert(handle.clone(), Arc::new(Mutex::new(browser)));
         handle
     }
@@ -63,12 +69,23 @@ impl BrowserTable {
 }
 
 pub(crate) fn init_log_() -> Result<(), SetLoggerError> {
-    log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Info))
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Trace))
 }
 
 #[wasm_bindgen]
 pub fn init_log() -> Result<(), JsValue> {
     init_log_().map_err(|e| to_value(&e.to_string()).unwrap())
+}
+
+// Next let's define a macro that's like `println!`, only it works for
+// `console.log`. Note that `println!` doesn't actually work on the wasm target
+// because the standard library currently just eats all output. To get
+// `println!`-like behavior in your app you'll likely want a macro like this.
+
+macro_rules! console_log {
+    // Note that this is using the `log` function imported above during
+    // `bare_bones`
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
 /// Starts Terminal DeBot Browser with main DeBot.
@@ -154,7 +171,8 @@ pub async fn create_browser(
 #[wasm_bindgen]
 pub async fn destroy_browser(handle: BrowserHandle) -> Result<(), JsValue> {
     BROWSER_TABLE
-        .remove(&handle).await
+        .remove(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
     Ok(())
 }
@@ -167,7 +185,8 @@ pub async fn destroy_browser(handle: BrowserHandle) -> Result<(), JsValue> {
 pub async fn run_browser(handle: BrowserHandle, manifest: JsValue) -> Result<JsValue, JsValue> {
     let manifest: DebotManifest = from_value(manifest).unwrap();
     let browser = BROWSER_TABLE
-        .get(&handle).await
+        .get(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
     let result = browser.lock().await.run_manifest(manifest).await?;
     let serializer = Serializer::new().serialize_maps_as_objects(true);
@@ -182,7 +201,8 @@ pub async fn run_browser(handle: BrowserHandle, manifest: JsValue) -> Result<JsV
 #[wasm_bindgen]
 pub async fn update_user_settings(handle: BrowserHandle, settings: JsValue) -> Result<(), JsValue> {
     let browser = BROWSER_TABLE
-        .get(&handle).await
+        .get(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
     let settings: UserSettings =
         from_value(settings).map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -226,7 +246,8 @@ pub async fn register_signing_box(
     dapp_box: DAppSigningBox,
 ) -> Result<SigningBoxHandle, JsValue> {
     let browser = BROWSER_TABLE
-        .get(&handle).await
+        .get(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
 
     let client = browser.lock().await.client.clone();
@@ -243,7 +264,8 @@ pub async fn close_signing_box(
     sbox_handle: SigningBoxHandle,
 ) -> Result<(), JsValue> {
     let browser = BROWSER_TABLE
-        .get(&handle).await
+        .get(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
 
     let client = browser.lock().await.client.clone();
@@ -264,7 +286,8 @@ pub async fn signing_box_public_key(
     sbox_handle: SigningBoxHandle,
 ) -> Result<JsValue, JsValue> {
     let browser = BROWSER_TABLE
-        .get(&handle).await
+        .get(&handle)
+        .await
         .ok_or(format!("invalid handle"))?;
 
     let client = browser.lock().await.client.clone();
@@ -309,14 +332,10 @@ pub fn scrypt(params: JsValue) -> Result<String, JsValue> {
         .map(|v| v.key)
 }
 
-
 #[wasm_bindgen]
 pub fn generate_random_bytes(length: u32) -> Result<String, JsValue> {
     let ctx = Arc::new(ClientContext::new(ClientConfig::default()).unwrap());
-    ton_client::crypto::generate_random_bytes(
-        ctx,
-        ParamsOfGenerateRandomBytes{ length }
-    )
-    .map_err(|e| JsValue::from_str(&format!("{}", e)))
-    .map(|v| v.bytes)
+    ton_client::crypto::generate_random_bytes(ctx, ParamsOfGenerateRandomBytes { length })
+        .map_err(|e| JsValue::from_str(&format!("{}", e)))
+        .map(|v| v.bytes)
 }

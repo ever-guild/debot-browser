@@ -1,7 +1,7 @@
 use super::dinterface::{decode_answer_id, decode_array, decode_prompt};
 use crate::helpers::TonClient;
 use crate::{term_signing_box::TerminalSigningBox, ChainProcessor, ProcessorError};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use ton_client::abi::Abi;
@@ -56,35 +56,33 @@ pub struct SigningBoxInput {
 }
 impl SigningBoxInput {
     pub fn new(client: TonClient, processor: Arc<RwLock<ChainProcessor>>) -> Self {
-        Self { handles: RwLock::new(vec![]), client, processor }
+        Self {
+            handles: RwLock::new(vec![]),
+            client,
+            processor,
+        }
     }
 
     async fn get(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let prompt = decode_prompt(args)?;
-        let possible_keys = decode_array(
-            args,
-            "possiblePublicKeys",
-            |elem| {
-                decode_abi_bigint(elem.as_str()?).ok()?;
-                Some(elem.as_str().unwrap().to_string())
-            }
-        )?;
+        let possible_keys = decode_array(args, "possiblePublicKeys", |elem| {
+            decode_abi_bigint(elem.as_str()?).ok()?;
+            Some(elem.as_str().unwrap().to_string())
+        })?;
         println!("{}", prompt);
         let result = self.processor.write().await.next_signing_box();
         match result {
             Err(ProcessorError::InterfaceCallNeeded) => {
-                let signing_box = TerminalSigningBox::new::<&[u8]>(
-                    self.client.clone(), possible_keys, None
-                ).await?;
+                let signing_box =
+                    TerminalSigningBox::new::<&[u8]>(self.client.clone(), possible_keys, None)
+                        .await?;
                 let handle = signing_box.handle();
                 self.handles.write().await.push(signing_box);
                 Ok((answer_id, json!({ "handle": handle.0})))
             }
             Err(e) => Err(format!("{:?}", e))?,
-            Ok(handle) => {
-                Ok((answer_id, json!({ "handle": handle}) ))
-            }
+            Ok(handle) => Ok((answer_id, json!({ "handle": handle }))),
         }
     }
 }

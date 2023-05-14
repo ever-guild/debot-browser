@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. 
 
+## 0.6.0 (2023-05-??)
+
+* updated dependencies and ever-sdk to 1.42.1
+* rename package to `@ever-guild/debot-browser`
+
 ## 0.5.5 (2022-04-05)
 
 ## Fixes

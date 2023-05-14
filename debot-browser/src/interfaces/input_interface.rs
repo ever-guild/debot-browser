@@ -14,7 +14,7 @@ use super::dinterface::{decode_answer_id, decode_prompt, decode_string_arg};
 use super::menu::{MenuItem, ID as MENU_ID};
 use super::terminal::ID as TERMINAL_ID;
 use crate::{ChainProcessor, ProcessorError};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use ton_client::abi::Abi;
@@ -53,12 +53,16 @@ impl DebotInterface for InputInterface {
                 return self.inner_interface.call(func, args).await;
             }
         }
-        let result = self.processor.write().await.next_input(&self.get_id(), func, args);
+        let result = self
+            .processor
+            .write()
+            .await
+            .next_input(&self.get_id(), func, args);
         match result {
             Err(ProcessorError::InterfaceCallNeeded) => {
                 let res = self.inner_interface.call(func, args).await?;
                 Ok(res)
-            },
+            }
             Err(e) => Err(format!("{:?}", e))?,
             Ok(params) => {
                 let prompt = decode_prompt(args);
@@ -77,12 +81,14 @@ impl DebotInterface for InputInterface {
                     }
                 }
                 let answer_id = if self.get_id() == MENU_ID {
-                    let n = params["index"].as_u64()
+                    let n = params["index"]
+                        .as_u64()
                         .ok_or(format!("invalid arguments for menu callback"))?;
-                    let menu_items: Vec<MenuItem> = serde_json::from_value(args["items"].clone())
-                        .map_err(|e| e.to_string())?;
+                    let menu_items: Vec<MenuItem> =
+                        serde_json::from_value(args["items"].clone()).map_err(|e| e.to_string())?;
                     let menu = menu_items.get(n as usize);
-                    menu.ok_or(format!("menu index is out of range"))?.handler_id
+                    menu.ok_or(format!("menu index is out of range"))?
+                        .handler_id
                 } else {
                     decode_answer_id(args)?
                 };

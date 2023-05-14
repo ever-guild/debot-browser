@@ -10,21 +10,14 @@
  * See the License for the specific TON DEV software governing permissions and
  * limitations under the License.
  */
-use crate::helpers::{create_client_local, WORD_COUNT, HD_PATH};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::helpers::read_keys;
+use crate::helpers::{create_client_local, HD_PATH, WORD_COUNT};
 use ton_client::crypto::{
-    KeyPair,
-    mnemonic_from_random,
-    hdkey_xprv_from_mnemonic,
-    hdkey_secret_from_xprv,
-    nacl_sign_keypair_from_secret_key,
-    hdkey_derive_from_xprv_path,
-    ParamsOfHDKeySecretFromXPrv,
-    ParamsOfHDKeyDeriveFromXPrvPath,
-    ParamsOfHDKeyXPrvFromMnemonic,
-    ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfMnemonicFromRandom
+    hdkey_derive_from_xprv_path, hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic,
+    mnemonic_from_random, nacl_sign_keypair_from_secret_key, KeyPair, MnemonicDictionary,
+    ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic,
+    ParamsOfMnemonicFromRandom, ParamsOfNaclSignKeyPairFromSecret,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -48,7 +41,7 @@ pub fn gen_seed_phrase() -> Result<String, String> {
     mnemonic_from_random(
         client,
         ParamsOfMnemonicFromRandom {
-            dictionary: Some(1),
+            dictionary: Some(MnemonicDictionary::English),
             word_count: Some(WORD_COUNT),
             ..Default::default()
         },
@@ -62,12 +55,13 @@ pub fn generate_keypair_from_mnemonic(mnemonic: &str) -> Result<KeyPair, String>
     let hdk_master = hdkey_xprv_from_mnemonic(
         client.clone(),
         ParamsOfHDKeyXPrvFromMnemonic {
-            dictionary: Some(1),
+            dictionary: Some(MnemonicDictionary::English),
             word_count: Some(WORD_COUNT),
             phrase: mnemonic.to_string(),
             ..Default::default()
         },
-    ).map_err(|e| format!("{}", e))?;
+    )
+    .map_err(|e| format!("{}", e))?;
 
     let hdk_root = hdkey_derive_from_xprv_path(
         client.clone(),
@@ -76,7 +70,8 @@ pub fn generate_keypair_from_mnemonic(mnemonic: &str) -> Result<KeyPair, String>
             path: HD_PATH.to_string(),
             ..Default::default()
         },
-    ).map_err(|e| format!("{}", e))?;
+    )
+    .map_err(|e| format!("{}", e))?;
 
     let secret = hdkey_secret_from_xprv(
         client.clone(),
@@ -84,7 +79,8 @@ pub fn generate_keypair_from_mnemonic(mnemonic: &str) -> Result<KeyPair, String>
             xprv: hdk_root.xprv,
             ..Default::default()
         },
-    ).map_err(|e| format!("{}", e))?;
+    )
+    .map_err(|e| format!("{}", e))?;
 
     let mut keypair: KeyPair = nacl_sign_keypair_from_secret_key(
         client.clone(),
@@ -92,11 +88,12 @@ pub fn generate_keypair_from_mnemonic(mnemonic: &str) -> Result<KeyPair, String>
             secret: secret.secret,
             ..Default::default()
         },
-    ).map_err(|e| format!("failed to get KeyPair from secret key: {}", e))?;
+    )
+    .map_err(|e| format!("failed to get KeyPair from secret key: {}", e))?;
 
     // special case if secret contains public key too.
-    let secret = hex::decode(&keypair.secret)
-        .map_err(|e| format!("failed to decode the keypair: {}", e))?;
+    let secret =
+        hex::decode(&keypair.secret).map_err(|e| format!("failed to decode the keypair: {}", e))?;
     if secret.len() > 32 {
         keypair.secret = hex::encode(&secret[..32]);
     }
@@ -109,15 +106,29 @@ mod tests {
 
     #[test]
     fn test_generate_keypair() {
-        let mnemonic = "multiply extra monitor fog rocket defy attack right night jaguar hollow enlist";
+        let mnemonic =
+            "multiply extra monitor fog rocket defy attack right night jaguar hollow enlist";
         let keypair = generate_keypair_from_mnemonic(mnemonic).unwrap();
-        assert_eq!(&keypair.public, "757221fe3d4992e44632e75e700aaf205d799cb7373ee929273daf26adf29e56");
-        assert_eq!(&keypair.secret, "30e3bc5e67af2b0a72971bcc11256e83d052c6cb861a69a19a8af88922fadf3a");
+        assert_eq!(
+            &keypair.public,
+            "757221fe3d4992e44632e75e700aaf205d799cb7373ee929273daf26adf29e56"
+        );
+        assert_eq!(
+            &keypair.secret,
+            "30e3bc5e67af2b0a72971bcc11256e83d052c6cb861a69a19a8af88922fadf3a"
+        );
 
-        let mnemonic = "penalty nut enrich input palace flame safe session torch depth various hunt";
+        let mnemonic =
+            "penalty nut enrich input palace flame safe session torch depth various hunt";
         let keypair = generate_keypair_from_mnemonic(mnemonic).unwrap();
-        assert_eq!(&keypair.public, "8cf557aab2666867a1174e3147d89ddf28c2041a7322522276cd1cf1df47ae73");
-        assert_eq!(&keypair.secret, "f63d3d11e0dc91f730f22d5397f269e01f1a5f984879c8581ac87f099bfd3b3a");
+        assert_eq!(
+            &keypair.public,
+            "8cf557aab2666867a1174e3147d89ddf28c2041a7322522276cd1cf1df47ae73"
+        );
+        assert_eq!(
+            &keypair.secret,
+            "f63d3d11e0dc91f730f22d5397f269e01f1a5f984879c8581ac87f099bfd3b3a"
+        );
     }
 
     #[test]
@@ -144,5 +155,4 @@ mod tests {
             assert!(generate_keypair_from_mnemonic(phrase).is_err());
         }
     }
-
 }

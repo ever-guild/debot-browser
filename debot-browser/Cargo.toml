@@ -1,26 +1,24 @@
 [package]
-authors = ["TON Labs <support@tonlabs.io>"]
+authors = ["Ever Guild"]
 edition = "2018"
 name = "debot-browser"
-version = "0.5.5"
-description = "Standalone cli DeBot Browser"
-repository = "https://github.com/tonlabs/rust-debot-browser"
+version = "0.6.0-rc.2"
+description = "Standalone debot browser"
+repository = "https://github.com/ever-guild/debot-browser"
 license = "Apache-2.0"
 keywords = [
     "debot browser",
     "debot",
     "browser",
     "wasm",
-    "tonlabs",
-    "Surf",
-    "Everscale",
+    "tvm",
 ]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = [] # "console_error_panic_hook", 
+default = [] # "console_error_panic_hook",
 
 [dependencies.web-sys]
 version = "0.3"
@@ -34,41 +32,31 @@ base64 = '0.10.1'
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.6", optional = true }
-hex = "0.3.2"
-js-sys = "0.3.55"
-lazy_static = "1.1.0"
-log = { version = "0.4.11", features = ["std"] }
-num-bigint = "0.4"
-num-traits = "0.2"
-serde = { version = "1.0", features = ["derive"] }
-serde_derive = "1.0"
-serde_json = "1.0"
-rand = "0.7.3"
-regex = "1.5.4"
-serde-wasm-bindgen = "0.3.1"
-tokio = { version = "0.2.13", features = [
-    "sync",
-    "stream",
-], default-features = false }
-
-ton_client = { git = 'https://github.com/tonlabs/TON-SDK.git', tag = '1.32.0', default-features = false, features = [
+hex = "0.4.3"
+js-sys = "0.3.62"
+lazy_static = "1.4.0"
+log = { version = "0.4.17", features = ["std"] }
+num-bigint = "0.4.3"
+num-traits = "0.2.15"
+serde = { version = "1.0.163", features = ["derive"] }
+serde_derive = "1.0.163"
+serde_json = "1.0.96"
+rand = "0.8.5"
+regex = "1.8.1"
+serde-wasm-bindgen = "0.5.0"
+tokio = "^1"
+wasm-bindgen = "0.2.85"
+wasm-bindgen-futures = "0.4.35"
+ton_client = { git = 'https://github.com/tonlabs/ever-sdk.git', tag = '1.42.1', default-features = false, features = [
     "wasm",
 ] }
 
-wasm-bindgen = "0.2.77"
-wasm-bindgen-futures = "0.4.27"
-
 [dev-dependencies]
-wasm-bindgen-test = "0.3.26"
+wasm-bindgen-test = "0.3.35"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
-
-[profile.release]
-#lto = true
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
+wasm-opt = ["-Oz", "--enable-mutable-globals"]
 
 [dependencies.clear_on_drop]
 features = ["no_cc"]
-version = "0.2"      #This version should match the version that the ed25519-dalek crate depends on.
+version = "0.2" # This version should match the version that the ed25519-dalek crate depends on.

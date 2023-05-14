@@ -10,7 +10,7 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use ton_client::abi::Abi;
 use ton_client::debot::{DebotInterface, InterfaceResult};
 
@@ -48,35 +48,35 @@ pub const ECHO_ABI: &str = r#"
 
 pub struct Echo {}
 impl Echo {
-	pub fn new() -> Self {
-		Self {}
-	}
+    pub fn new() -> Self {
+        Self {}
+    }
 
-	fn echo(&self, args: &Value) -> InterfaceResult {
-		let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
-		let request_vec = hex::decode(args["request"].as_str().unwrap()).unwrap();
-		let request = std::str::from_utf8(&request_vec).unwrap();
-		Ok((
-			answer_id,
-			json!({ "response": hex::encode(request.as_bytes()) }),
-		))
-	}
+    fn echo(&self, args: &Value) -> InterfaceResult {
+        let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+        let request_vec = hex::decode(args["request"].as_str().unwrap()).unwrap();
+        let request = std::str::from_utf8(&request_vec).unwrap();
+        Ok((
+            answer_id,
+            json!({ "response": hex::encode(request.as_bytes()) }),
+        ))
+    }
 }
 
 #[async_trait::async_trait]
 impl DebotInterface for Echo {
-	fn get_id(&self) -> String {
-		ECHO_ID.to_string()
-	}
+    fn get_id(&self) -> String {
+        ECHO_ID.to_string()
+    }
 
-	fn get_abi(&self) -> Abi {
-		Abi::Json(ECHO_ABI.to_owned())
-	}
+    fn get_abi(&self) -> Abi {
+        Abi::Json(ECHO_ABI.to_owned())
+    }
 
-	async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
-		match func {
-			"echo" => self.echo(args),
-			_ => Err(format!("function \"{}\" is not implemented", func)),
-		}
-	}
+    async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
+        match func {
+            "echo" => self.echo(args),
+            _ => Err(format!("function \"{}\" is not implemented", func)),
+        }
+    }
 }

@@ -35,10 +35,7 @@ pub(super) struct Callbacks {
 }
 
 impl Callbacks {
-    pub fn new(
-        client: TonClient,
-        processor: Arc<tokio::sync::RwLock<ChainProcessor>>,
-    ) -> Self {
+    pub fn new(client: TonClient, processor: Arc<tokio::sync::RwLock<ChainProcessor>>) -> Self {
         Self {
             client,
             processor,
@@ -179,8 +176,7 @@ impl BrowserCallbacks for Callbacks {
                 }
                 info += &format!("  Message signer public key: {}\n", signkey);
                 if setcode {
-                    info +=
-                        "  Warning: the transaction will change the account's code\n";
+                    info += "  Warning: the transaction will change the account's code\n";
                 }
                 prompt = "Confirm the transaction (y/n)?";
             }
