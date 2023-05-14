@@ -32,9 +32,9 @@ mod utils;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 pub use api::{
-    close_signing_box, create_browser, destroy_browser, generate_keypair, init_log,
-    register_signing_box, run_browser, run_debot_browser, sign, signing_box_public_key,
-    update_user_settings, scrypt, sha256, chacha20, generate_random_bytes
+    chacha20, close_signing_box, create_browser, destroy_browser, generate_keypair,
+    generate_random_bytes, init_log, register_signing_box, run_browser, run_debot_browser, scrypt,
+    sha256, sign, signing_box_public_key, update_user_settings,
 };
 use callbacks::Callbacks;
 pub use interfaces::dinterface::SupportedInterfaces;

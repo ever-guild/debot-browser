@@ -1,8 +1,8 @@
 use super::dinterface::decode_answer_id;
 use crate::config::SharedUserSettings;
-use crate::term_signing_box::TerminalSigningBox;
 use crate::helpers::TonClient;
-use serde_json::{Value, json};
+use crate::term_signing_box::TerminalSigningBox;
+use serde_json::{json, Value};
 use ton_client::abi::Abi;
 use ton_client::debot::{DebotInterface, InterfaceResult};
 
@@ -71,13 +71,18 @@ pub struct UserInfo {
 }
 impl UserInfo {
     pub fn new(client: TonClient, settings: SharedUserSettings) -> Self {
-        Self { _client: client, settings }
+        Self {
+            _client: client,
+            settings,
+        }
     }
 
     async fn get_account(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let value = self
-            .settings.read().await
+            .settings
+            .read()
+            .await
             .wallet
             .clone()
             .unwrap_or_else(|| format!("0:{:064}", 0));
@@ -87,14 +92,15 @@ impl UserInfo {
     async fn get_public_key(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let value = self
-            .settings.read().await
+            .settings
+            .read()
+            .await
             .pubkey
             .clone()
             .unwrap_or_else(|| format!("0x{:064}", 0));
         Ok((answer_id, json!({ "value": value })))
     }
 
-    
     async fn get_signing_box(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let handle = if cfg!(target_arch = "wasm32") {
@@ -102,11 +108,8 @@ impl UserInfo {
         } else {
             let keys_path = self.settings.read().await.keys_path.clone();
             if let Some(keys) = keys_path {
-                let mut signing_box = TerminalSigningBox::new_with_keypath(
-                    self._client.clone(),
-                    keys,
-                )
-                .await?;
+                let mut signing_box =
+                    TerminalSigningBox::new_with_keypath(self._client.clone(), keys).await?;
                 Some(signing_box.leak().0)
             } else {
                 None
@@ -114,7 +117,6 @@ impl UserInfo {
         };
         Ok((answer_id, json!({ "handle": handle.unwrap_or_default()})))
     }
-
 }
 
 #[async_trait::async_trait]

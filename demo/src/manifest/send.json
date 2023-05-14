@@ -1,0 +1,33 @@
+{
+  "version": 0,
+  "debotAddress": "",
+  "initMethod": "invokeSend",
+  "initArgs": {
+    "dest": "",
+    "amount": 500000000,
+    "bounce": false
+  },
+  "quiet": true,
+  "autoApprove": ["ApproveOnChainCall"],
+  "abi": {
+    "ABI version": 2,
+    "version": "2.2",
+    "header": ["time"],
+    "functions": [
+      {
+        "name": "onSend",
+        "inputs": [
+          {"name":"succeed","type":"bool"},
+          {"name":"sdkError","type":"uint32"},
+          {"name":"exitCode","type":"uint32"}
+        ],
+        "outputs": [
+        ]
+      }
+    ],
+    "data": [],
+    "events": [],
+    "fields": []
+  },
+  "chain": []
+}

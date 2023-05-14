@@ -1,6 +1,6 @@
 use super::dinterface::{decode_answer_id, decode_int256, decode_prompt};
 use crate::term_browser::terminal_input;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use ton_client::abi::Abi;
 use ton_client::debot::{DebotInterface, InterfaceResult};
 use ton_client::encoding::decode_abi_bigint;

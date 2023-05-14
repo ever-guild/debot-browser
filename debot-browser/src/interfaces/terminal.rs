@@ -3,13 +3,14 @@ use super::dinterface::{
 };
 use crate::convert::convert_token;
 use crate::term_browser::terminal_input;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io::Read;
 use ton_client::abi::Abi;
 use ton_client::debot::{DebotInterface, InterfaceResult};
 use ton_client::encoding::decode_abi_bigint;
 
-pub(super) const ID: &'static str = "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3";
+pub(super) const ID: &'static str =
+    "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3";
 
 const ABI: &str = r#"
 {
@@ -77,7 +78,7 @@ pub struct Terminal {
 
 impl Terminal {
     pub fn new(printer: Printer) -> Self {
-        Self {printer}
+        Self { printer }
     }
     fn input_str(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
@@ -91,7 +92,8 @@ impl Terminal {
             } else {
                 println!("(Ctrl+D to exit)");
             }
-            std::io::stdin().read_to_string(&mut value)
+            std::io::stdin()
+                .read_to_string(&mut value)
                 .map_err(|e| format!("input error: {}", e))?;
             println!();
         } else {
@@ -146,8 +148,8 @@ impl Terminal {
     pub async fn print(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let message = decode_string_arg(args, "message")?;
-		self.printer.print(&message).await;
-		Ok((answer_id, json!({})))
+        self.printer.print(&message).await;
+        Ok((answer_id, json!({})))
     }
 }
 

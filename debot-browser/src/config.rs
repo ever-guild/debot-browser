@@ -11,12 +11,12 @@
  * limitations under the License.
  */
 use crate::SigningBoxHandle;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use lazy_static::lazy_static;
-use regex::Regex;
 
 fn default_wc() -> i32 {
     0
@@ -38,14 +38,16 @@ fn default_false() -> bool {
     false
 }
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
 fn default_lifetime() -> u32 {
     60
 }
 
 fn default_endpoints() -> Vec<String> {
-    return vec!();
+    return vec![];
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -128,18 +130,19 @@ impl Config {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn from_file(path: &str) -> Option<Self> {
         let conf_str = std::fs::read_to_string(path).ok()?;
-        let conf: serde_json::error::Result<FullConfig>  = serde_json::from_str(&conf_str);
-        conf.map(|c| c.config).or_else(|_| serde_json::from_str(&conf_str)).ok()
+        let conf: serde_json::error::Result<FullConfig> = serde_json::from_str(&conf_str);
+        conf.map(|c| c.config)
+            .or_else(|_| serde_json::from_str(&conf_str))
+            .ok()
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn to_file(path: &str, conf: &Config) -> Result<(), String> {
-        let mut fconf= FullConfig::from_file(path);
+        let mut fconf = FullConfig::from_file(path);
         fconf.config = conf.to_owned();
         FullConfig::to_file(path, &fconf)
     }
 }
-
 
 lazy_static! {
     static ref MAIN_ENDPOINTS: Vec<String> = vec![
@@ -147,12 +150,10 @@ lazy_static! {
         "https://main3.ton.dev".to_string(),
         "https://main4.ton.dev".to_string(),
     ];
-
     static ref NET_ENDPOINTS: Vec<String> = vec![
         "https://net1.ton.dev".to_string(),
         "https://net5.ton.dev".to_string(),
     ];
-
     static ref SE_ENDPOINTS: Vec<String> = vec![
         "http://0.0.0.0/".to_string(),
         "http://127.0.0.1/".to_string(),
@@ -171,9 +172,7 @@ pub fn resolve_net_name(url: &str) -> Option<String> {
             }
         }
     }
-    if url.contains("127.0.0.1") ||
-        url.contains("0.0.0.0") ||
-        url.contains("localhost") {
+    if url.contains("127.0.0.1") || url.contains("0.0.0.0") || url.contains("localhost") {
         return Some("http://127.0.0.1/".to_string());
     }
     None
@@ -184,7 +183,7 @@ pub(crate) fn resolve_endpoints(url: &str) -> Vec<String> {
         Some(network) => FullConfig::default_map()[&network].clone(),
         None => vec![url.to_string()],
     }
-} 
+}
 
 impl FullConfig {
     pub fn new() -> Self {
@@ -194,10 +193,14 @@ impl FullConfig {
         }
     }
     pub fn default_map() -> BTreeMap<String, Vec<String>> {
-        [("main.ton.dev".to_owned(), MAIN_ENDPOINTS.to_owned()),
+        [
+            ("main.ton.dev".to_owned(), MAIN_ENDPOINTS.to_owned()),
             ("net.ton.dev".to_owned(), NET_ENDPOINTS.to_owned()),
             ("http://127.0.0.1/".to_owned(), SE_ENDPOINTS.to_owned()),
-        ].iter().cloned().collect()
+        ]
+        .iter()
+        .cloned()
+        .collect()
     }
 
     #[allow(dead_code)]
@@ -206,19 +209,22 @@ impl FullConfig {
     }
     pub fn from_file(path: &str) -> FullConfig {
         let conf_str = std::fs::read_to_string(path).ok().unwrap_or_default();
-        serde_json::from_str(&conf_str).ok().unwrap_or(FullConfig::new())
+        serde_json::from_str(&conf_str)
+            .ok()
+            .unwrap_or(FullConfig::new())
     }
 
-    pub fn to_file(path: &str, fconf: &FullConfig) -> Result<(), String>{
+    pub fn to_file(path: &str, fconf: &FullConfig) -> Result<(), String> {
         let conf_str = serde_json::to_string_pretty(fconf)
             .map_err(|_| "failed to serialize config object".to_string())?;
-        std::fs::write(path, conf_str).map_err(|e| format!("failed to write config file: {}", e))?;
+        std::fs::write(path, conf_str)
+            .map_err(|e| format!("failed to write config file: {}", e))?;
         Ok(())
     }
 }
 #[cfg(test)]
 mod tests {
-    use super::{resolve_net_name};
+    use super::resolve_net_name;
 
     #[test]
     fn test_endpoints_resolver() {
@@ -227,28 +233,73 @@ mod tests {
         assert_eq!(resolve_net_name("https://rustnet.ton.dev"), None);
         assert_eq!(resolve_net_name("rustnet.ton.com"), None);
         assert_eq!(resolve_net_name("https://example.com"), None);
-        assert_eq!(resolve_net_name("http://localhost"), Some("http://127.0.0.1/".to_owned()));
-        assert_eq!(resolve_net_name("https://localhost"), Some("http://127.0.0.1/".to_owned()));
-        assert_eq!(resolve_net_name("localhost"), Some("http://127.0.0.1/".to_owned()));
-        assert_eq!(resolve_net_name("http://127.0.0.1"), Some("http://127.0.0.1/".to_owned()));
-        assert_eq!(resolve_net_name("https://127.0.0.1"), Some("http://127.0.0.1/".to_owned()));
+        assert_eq!(
+            resolve_net_name("http://localhost"),
+            Some("http://127.0.0.1/".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("https://localhost"),
+            Some("http://127.0.0.1/".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("localhost"),
+            Some("http://127.0.0.1/".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("http://127.0.0.1"),
+            Some("http://127.0.0.1/".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("https://127.0.0.1"),
+            Some("http://127.0.0.1/".to_owned())
+        );
         assert_eq!(resolve_net_name("https://127.0.0.2"), None);
         assert_eq!(resolve_net_name("https://127.1.0.1"), None);
         assert_eq!(resolve_net_name("https://0.0.0.1"), None);
         assert_eq!(resolve_net_name("https://1.0.0.0"), None);
 
-        assert_eq!(resolve_net_name("https://main.ton.dev"), Some("main.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("http://main.ton.dev"), Some("main.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("  http://main.ton.dev  "), Some("main.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("  https://main.ton.dev  "), Some("main.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("main.ton.dev"), Some("main.ton.dev".to_owned()));
+        assert_eq!(
+            resolve_net_name("https://main.ton.dev"),
+            Some("main.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("http://main.ton.dev"),
+            Some("main.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("  http://main.ton.dev  "),
+            Some("main.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("  https://main.ton.dev  "),
+            Some("main.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("main.ton.dev"),
+            Some("main.ton.dev".to_owned())
+        );
         assert_eq!(resolve_net_name("main.ton.com"), None);
 
-        assert_eq!(resolve_net_name("https://net.ton.dev"), Some("net.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("http://net.ton.dev"), Some("net.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("  http://net.ton.dev  "), Some("net.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("  https://net.ton.dev  "), Some("net.ton.dev".to_owned()));
-        assert_eq!(resolve_net_name("net.ton.dev"), Some("net.ton.dev".to_owned()));
+        assert_eq!(
+            resolve_net_name("https://net.ton.dev"),
+            Some("net.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("http://net.ton.dev"),
+            Some("net.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("  http://net.ton.dev  "),
+            Some("net.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("  https://net.ton.dev  "),
+            Some("net.ton.dev".to_owned())
+        );
+        assert_eq!(
+            resolve_net_name("net.ton.dev"),
+            Some("net.ton.dev".to_owned())
+        );
         assert_eq!(resolve_net_name("net.ton.com"), None);
     }
 }

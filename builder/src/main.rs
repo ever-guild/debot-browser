@@ -44,21 +44,17 @@ fn fix_wat(mut wrapper: String) -> String {
 }
 
 fn main() {
-    let repo_dir = std::env::current_dir()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf();
+    assert!(exec(
+        "wasm-pack",
+        &["build", CRATE_NAME, "--release", "--scope", "ever-guild",]
+    )
+    .success());
+
+    let repo_dir = std::env::current_dir().unwrap();
     let crate_dir = repo_dir.join(CRATE_NAME);
-    std::env::set_current_dir(&crate_dir).unwrap();
-
-    assert!(exec("wasm-pack", &["build", "--release"]).success());
-
     let pkg_dir = crate_dir.join("pkg");
 
-    let wasm_path = pkg_dir
-        .clone()
-        .join(&format!("{}_bg.wasm", CRATE_NAME).replace('-', "_"));
+    let wasm_path = pkg_dir.join(format!("{}_bg.wasm", CRATE_NAME).replace('-', "_"));
 
     println!("Disassembling wasm...");
     let wat = wasmprinter::print_file(&wasm_path).unwrap();
@@ -69,7 +65,6 @@ fn main() {
     let fixed_wasm = wat::parse_str(fixed_wat).unwrap();
     println!("Done.");
     fs::write(&wasm_path, fixed_wasm).unwrap();
-
 }
 
 pub fn exec(cmd: &str, args: &[&str]) -> ExitStatus {

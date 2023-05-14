@@ -1,4 +1,4 @@
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use ton_client::abi::Abi;
 use ton_client::debot::{DebotInterface, InterfaceResult};
 
@@ -32,31 +32,31 @@ pub const STDOUT_ABI: &str = r#"{
 
 pub struct Stdout {}
 impl Stdout {
-	pub fn new() -> Self {
-		Self {}
-	}
-	pub fn print(&self, args: &Value) -> InterfaceResult {
-		let text_vec = hex::decode(args["message"].as_str().unwrap()).unwrap();
-		let text = std::str::from_utf8(&text_vec).unwrap();
-		println!("{}", text);
-		Ok((0, json!({})))
-	}
+    pub fn new() -> Self {
+        Self {}
+    }
+    pub fn print(&self, args: &Value) -> InterfaceResult {
+        let text_vec = hex::decode(args["message"].as_str().unwrap()).unwrap();
+        let text = std::str::from_utf8(&text_vec).unwrap();
+        println!("{}", text);
+        Ok((0, json!({})))
+    }
 }
 
 #[async_trait::async_trait]
 impl DebotInterface for Stdout {
-	fn get_id(&self) -> String {
-		STDOUT_ID.to_string()
-	}
+    fn get_id(&self) -> String {
+        STDOUT_ID.to_string()
+    }
 
-	fn get_abi(&self) -> Abi {
-		Abi::Json(STDOUT_ABI.to_owned())
-	}
+    fn get_abi(&self) -> Abi {
+        Abi::Json(STDOUT_ABI.to_owned())
+    }
 
-	async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
-		match func {
-			"print" => self.print(args),
-			_ => Err(format!("function \"{}\" is not implemented", func)),
-		}
-	}
+    async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
+        match func {
+            "print" => self.print(args),
+            _ => Err(format!("function \"{}\" is not implemented", func)),
+        }
+    }
 }

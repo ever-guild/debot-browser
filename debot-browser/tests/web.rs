@@ -5,7 +5,7 @@
 extern crate wasm_bindgen_test;
 use wasm_bindgen_test::*;
 extern crate rust_debot_browser;
-use rust_debot_browser::{run_debot_browser, DebotManifest, greet};
+use rust_debot_browser::{greet, run_debot_browser, DebotManifest};
 
 wasm_bindgen_test_configure!(run_in_browser);
 

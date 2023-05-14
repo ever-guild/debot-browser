@@ -12,9 +12,8 @@
  */
 use crate::config::Config;
 use std::sync::Arc;
-use ton_client::abi::{
-    Abi, AbiConfig, AbiContract};
-use ton_client::crypto::{CryptoConfig};
+use ton_client::abi::{Abi, AbiConfig, AbiContract};
+use ton_client::crypto::{CryptoConfig, MnemonicDictionary};
 use ton_client::{ClientConfig, ClientContext};
 
 pub const HD_PATH: &str = "m/44'/396'/0'/0/0";
@@ -53,7 +52,7 @@ pub fn create_client(conf: &Config) -> Result<TonClient, String> {
             message_expiration_timeout_grow_factor: 1.3,
         },
         crypto: CryptoConfig {
-            mnemonic_dictionary: 1,
+            mnemonic_dictionary: MnemonicDictionary::English,
             mnemonic_word_count: WORD_COUNT,
             hdkey_derivation_path: HD_PATH.to_string(),
         },

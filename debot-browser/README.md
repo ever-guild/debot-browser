@@ -1,32 +1,32 @@
+<p align="center">
+  <a href="https://github.com/ever-guild/debots">
+    <img src="https://raw.githubusercontent.com/ever-guild/debot/main/asset/debot.svg" height="60"/>
+  </a>
+</p>
 <h1 align="center">
-  <code>Standalone cli DeBot Browser</code>
+  <code>Debot browser</code>
 </h1>
 
 <p align="center">
-  Standalone DeBot Browser written in Rust and compiled as WebAssembly
-  <br />
-  <br />
-    
+  Standalone Debot browser written in Rust and compiled as WebAssembly
 </p>
-
-# Cli DeBot Browser
 
 ## Purpose
 
-Run any DeBot in your website using DeBot Browser as Service.
+Run any Debot in your website using Debot browser as service.
 
 ## Getting Started
 
-To get started, install `debot-browser`:
+To get started, install:
 
-```sh
-npm i debot-browser
+```shell
+npm install @ever-guild/debot-browser
 ```
 
-Run DeBot:
+Run Debot:
 
 ```typescript
-import * as browser from "debot-browser";
+import * as browser from "@ever-guild/debot-browser";
 
 let defaultWallet = null; // or string with TON address
 let defaultPubkey = null; // or string with public key
@@ -156,6 +156,5 @@ let manifest = `{
     await browser.close_signing_box(browserHandle, sboxHandle)
 
     await browser.destroy_browser(browserHandle);
-
 });
 ```
